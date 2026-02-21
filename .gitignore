@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Build
+dist/
+
+# Env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Markdown docs geradas (não são código do projeto)
+CORRECAO_TAGS_FALTANTES.md
+CORRECOES_CONTRASTE.md
+FILTRAGEM_ENDPOINTS.md
+INTEGRACAO_AUTH.md
+RESPOSTA_CLIENTES_CAMPANHAS.md
