@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(curl:*)",
+      "Bash(# Let me check the API docs for creating private apps\ncurl -s \"https://painel.multibuscas.com.br/api/v1/applications/c4c4o8ccogo88scs8g8w00cs\" \\\\\n  -H \"Authorization: Bearer OTnXut07ueGmfeAnqWhSxgy4fgD1M0zmcjXvXqpsc5dcd72b\" | python3 -c \"\nimport json,sys\nd=json.load\\(sys.stdin\\)\nfor k in ['uuid','name','git_repository','git_branch','build_pack','source_id','source','domains','ports_exposes','dockerfile_location']:\n    print\\(f'{k}: {d.get\\(k\\)}'\\)\" 2>/dev/null)",
+      "WebFetch(domain:coolify.io)"
+    ]
+  }
+}
