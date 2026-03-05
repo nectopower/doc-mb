@@ -112,6 +112,30 @@ export function processSpecToNav(spec: any, userType?: string | null) {
   }));
 }
 
+// Resolve $ref pointers in the spec
+function resolveRef(obj: any, spec: any): any {
+  if (!obj || typeof obj !== 'object') return obj;
+
+  if (obj.$ref) {
+    const refPath = obj.$ref.replace('#/', '').split('/');
+    let resolved: any = spec;
+    for (const segment of refPath) {
+      resolved = resolved?.[segment];
+    }
+    return resolved ? resolveRef(resolved, spec) : obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => resolveRef(item, spec));
+  }
+
+  const result: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    result[key] = resolveRef(value, spec);
+  }
+  return result;
+}
+
 export function getOperation(spec: any, tagParam: string, operationIdParam: string) {
   if (!spec || !spec.paths) return null;
 
@@ -143,8 +167,10 @@ export function getOperation(spec: any, tagParam: string, operationIdParam: stri
   });
 
   if (foundOperation) {
+    // Resolve all $ref in the operation (parameters, requestBody, responses, etc.)
+    const resolved = resolveRef(foundOperation, spec);
     return {
-      ...foundOperation,
+      ...resolved,
       path: foundPath,
       method: foundMethod,
       tag: foundTag
