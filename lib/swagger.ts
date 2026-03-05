@@ -6,12 +6,11 @@ export async function getSwaggerSpec() {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005/api';
 
-    // Adicionar timeout curto para não travar o build/dev
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     const res = await fetch(`${apiUrl}/docs-json`, {
-      next: { revalidate: 3600 },
+      cache: 'no-store',
       headers: {
         'Accept': 'application/json'
       },

@@ -5,6 +5,8 @@ import CodeWindow from '@/components/CodeWindow';
 import { generateCurlCommand } from '@/lib/curl-generator';
 import EndpointGuard from '@/components/EndpointGuard';
 
+export const dynamic = 'force-dynamic';
+
 export default async function OperationPage({
   params
 }: {
