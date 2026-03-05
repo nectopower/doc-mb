@@ -90,7 +90,7 @@ export default function Sidebar({ apiNav, isMobileOpen, onClose }: { apiNav?: Na
             // Sem login, apenas autenticação
             return tag.title === 'Autenticação'
           }
-          return isEndpointAllowed(userType as any, tag.title, item.path)
+          return isEndpointAllowed(userType as any, tag.title, item.href)
         }) || []
 
         // Retornar tag apenas se tiver itens permitidos
