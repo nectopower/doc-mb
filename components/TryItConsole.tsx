@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Play, Loader2, Save, Trash2, RefreshCw } from 'lucide-react'
+import { Play, Loader2, Save, Trash2, RefreshCw, Copy, Check } from 'lucide-react'
 import { generateExampleFromSchema } from '@/lib/swagger'
 
 interface TryItConsoleProps {
@@ -18,6 +18,7 @@ export default function TryItConsole({ method, path, parameters = [], requestBod
   const [response, setResponse] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'params' | 'body' | 'auth'>('params')
+  const [copied, setCopied] = useState(false)
 
   // Initialize body with example if available
   useEffect(() => {
@@ -551,9 +552,24 @@ export default function TryItConsole({ method, path, parameters = [], requestBod
                 </span>
               )}
             </div>
-            <span className="text-xs text-slate-600 dark:text-slate-400 font-mono">
-              {response.time}ms
-            </span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  const text = response.data ? JSON.stringify(response.data, null, 2) : response.error || '';
+                  navigator.clipboard.writeText(text);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                title="Copiar resposta"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? 'Copiado!' : 'Copiar'}
+              </button>
+              <span className="text-xs text-slate-600 dark:text-slate-400 font-mono">
+                {response.time}ms
+              </span>
+            </div>
           </div>
           <div className="p-4 bg-white dark:bg-slate-950 overflow-x-auto max-h-96">
             <pre className="text-xs font-mono text-slate-900 dark:text-slate-300">
