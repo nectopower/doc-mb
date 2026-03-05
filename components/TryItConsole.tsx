@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Play, Loader2, Save, Trash2, RefreshCw, Copy, Check } from 'lucide-react'
 import { generateExampleFromSchema } from '@/lib/swagger'
+import { authService } from '@/lib/auth'
 
 interface TryItConsoleProps {
   method: string
@@ -130,73 +131,20 @@ export default function TryItConsole({ method, path, parameters = [], requestBod
     alert('Token salvo no navegador!')
   }
 
-  // Função para refresh automático do token usando refreshToken
+  // Função para refresh automático do token usando authService
   const handleRefreshToken = async () => {
-    const refreshToken = 
-      localStorage.getItem('refreshToken') ||
-      localStorage.getItem('refresh_token') ||
-      localStorage.getItem('api_refresh_token')
-    
-    if (!refreshToken) {
-      alert('Refresh token não encontrado. Faça login novamente.')
-      return
-    }
-
     setLoading(true)
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005/api'
-      // Tentar primeiro /auth/atualizar-token, depois /auth/refresh
-      let response = await fetch(`${apiUrl}/auth/atualizar-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken }),
-      })
-
-      // Se não funcionar, tentar /auth/refresh
-      if (!response.ok) {
-        response = await fetch(`${apiUrl}/auth/refresh`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ refreshToken }),
-        })
-      }
-
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        const newAccessToken = 
-          data.data?.accessToken ||
-          data.data?.tokens?.accessToken ||
-          data.accessToken ||
-          data.tokens?.accessToken
-
-        if (newAccessToken) {
-          setToken(newAccessToken)
-          saveTokenToStorage(newAccessToken)
-          
-          // Salvar refresh token atualizado se fornecido
-          const newRefreshToken = 
-            data.data?.refreshToken ||
-            data.data?.tokens?.refreshToken ||
-            data.refreshToken ||
-            data.tokens?.refreshToken
-
-          if (newRefreshToken) {
-            localStorage.setItem('refreshToken', newRefreshToken)
-            localStorage.setItem('refresh_token', newRefreshToken)
-            localStorage.setItem('api_refresh_token', newRefreshToken)
-          }
-
+      const refreshed = await authService.refreshAccessToken()
+      if (refreshed) {
+        const newToken = authService.getAccessToken()
+        if (newToken) {
+          setToken(newToken)
+          saveTokenToStorage(newToken)
           alert('Token renovado com sucesso!')
-        } else {
-          throw new Error('Token não encontrado na resposta')
         }
       } else {
-        throw new Error(data.message || 'Erro ao renovar token')
+        alert('Não foi possível renovar o token. Faça login novamente.')
       }
     } catch (error: any) {
       console.error('Erro ao renovar token:', error)
@@ -265,77 +213,32 @@ export default function TryItConsole({ method, path, parameters = [], requestBod
         }
       }
 
-      // Se receber 401, tentar refresh automático do token
+      // Se receber 401, tentar refresh automático do token via authService
       if (res.status === 401 && token) {
         console.log('[TryItConsole] Token expirado, tentando refresh automático...')
-        const refreshToken = 
-          localStorage.getItem('refreshToken') ||
-          localStorage.getItem('refresh_token') ||
-          localStorage.getItem('api_refresh_token')
-        
-        if (refreshToken) {
-          try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005/api'
-            // Tentar primeiro /auth/atualizar-token, depois /auth/refresh
-            let refreshResponse = await fetch(`${apiUrl}/auth/atualizar-token`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ refreshToken }),
+        const refreshed = await authService.refreshAccessToken()
+        if (refreshed) {
+          const newAccessToken = authService.getAccessToken()
+          if (newAccessToken) {
+            setToken(newAccessToken)
+            saveTokenToStorage(newAccessToken)
+
+            // Retry com novo token
+            const retryRes = await fetch(url, {
+              method: method.toUpperCase(),
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${newAccessToken}` },
+              body: ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase()) ? bodyValue : undefined
             })
+            const retryData = await retryRes.json().catch(() => null)
 
-            // Se não funcionar, tentar /auth/refresh
-            if (!refreshResponse.ok) {
-              refreshResponse = await fetch(`${apiUrl}/auth/refresh`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ refreshToken }),
-              })
-            }
-
-            const refreshData = await refreshResponse.json()
-
-            if (refreshResponse.ok && refreshData.success) {
-              const newAccessToken = 
-                refreshData.data?.accessToken ||
-                refreshData.data?.tokens?.accessToken ||
-                refreshData.accessToken ||
-                refreshData.tokens?.accessToken
-
-              if (newAccessToken) {
-                setToken(newAccessToken)
-                saveTokenToStorage(newAccessToken)
-                
-                // Tentar a requisição original novamente com o novo token
-                const retryHeaders: HeadersInit = {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${newAccessToken}`,
-                }
-
-                const retryRes = await fetch(url, {
-                  method: method.toUpperCase(),
-                  headers: retryHeaders,
-                  body: ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase()) ? bodyValue : undefined
-                })
-
-                const retryData = await retryRes.json().catch(() => null)
-                const retryEndTime = performance.now()
-
-                setResponse({
-                  status: retryRes.status,
-                  statusText: retryRes.statusText,
-                  time: Math.round(retryEndTime - startTime),
-                  data: retryData,
-                  autoRefreshed: true
-                })
-                return
-              }
-            }
-          } catch (refreshError) {
-            console.error('[TryItConsole] Erro no refresh automático:', refreshError)
+            setResponse({
+              status: retryRes.status,
+              statusText: retryRes.statusText,
+              time: Math.round(performance.now() - startTime),
+              data: retryData,
+              autoRefreshed: true
+            })
+            return
           }
         }
       }

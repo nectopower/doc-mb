@@ -63,14 +63,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     if (!user) return;
 
-    // Refresh a cada 15 minutos
+    // Refresh a cada 1h50m (antes do token de 2h expirar)
     const refreshInterval = setInterval(async () => {
       const refreshed = await authService.refreshAccessToken();
       if (!refreshed) {
-        // Se falhou, fazer logout
         setUser(null);
       }
-    }, 15 * 60 * 1000);
+    }, 110 * 60 * 1000);
 
     return () => clearInterval(refreshInterval);
   }, [user]);
