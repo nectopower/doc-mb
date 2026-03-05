@@ -1,32 +1,29 @@
 import { Code2, Zap, Layout, Database, Lock, Settings, Users, MessageSquare, Calendar, FileText, Bell, Star } from 'lucide-react';
 
 export async function getSwaggerSpec() {
-  // No servidor-side, verificar se podemos fazer fetch
-  // Se não for possível, retornar null silenciosamente
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005/api';
+    const specUrl = `${apiUrl}/docs-json`;
+
+    console.log('[swagger] Fetching spec from:', specUrl);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    const res = await fetch(`${apiUrl}/docs-json`, {
+    const res = await fetch(specUrl, {
       cache: 'no-store',
-      headers: {
-        'Accept': 'application/json'
-      },
+      headers: { 'Accept': 'application/json' },
       signal: controller.signal
     });
 
     clearTimeout(timeoutId);
 
-    if (!res.ok) {
-      return null;
-    }
+    console.log('[swagger] Response status:', res.status);
 
+    if (!res.ok) return null;
     return await res.json();
-  } catch (error) {
-    // Silenciosamente retornar null sem logar erros
-    // Isso é esperado em desenvolvimento quando o backend não está rodando
+  } catch (error: any) {
+    console.error('[swagger] Failed to fetch spec:', error?.message || error);
     return null;
   }
 }
