@@ -5,13 +5,12 @@ export async function getSwaggerSpec() {
   // Se não for possível, retornar null silenciosamente
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005/api';
-    const baseUrl = apiUrl.replace('/api', '');
 
     // Adicionar timeout curto para não travar o build/dev
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 segundos
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos
 
-    const res = await fetch(`${baseUrl}/swagger.yaml`, {
+    const res = await fetch(`${apiUrl}/docs-json`, {
       next: { revalidate: 3600 },
       headers: {
         'Accept': 'application/json'
